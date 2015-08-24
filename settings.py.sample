@@ -1,0 +1,15 @@
+from speaker.appstore import APPSTORE
+from speaker.play import GOOGLE_PLAY
+
+is_tor = False
+SHIFT_SEC = 60 * 30
+
+PLAY_APP_CODE = 'kr.co.vcnc.android.couple'
+APPSTORE_CODE = '458035189'
+
+SLACK_TOKEN = ''
+
+SLACK_CHANNEL = {
+    GOOGLE_PLAY: '',
+    APPSTORE: ''
+}
