@@ -1,0 +1,11 @@
+# IDE
+.idea
+
+# Virtualenv
+env
+
+# Setting files
+settings.py
+
+# Python
+*.pyc
