@@ -13,6 +13,7 @@ class Slack(object):
 
     @asyncio.coroutine
     def surveillance(self, reviews):
+        attachments = list()
         for review in reviews:
             print(review)
             if review['id'] in self.latest_review_ids:
@@ -25,19 +26,20 @@ class Slack(object):
             if len(self.latest_review_ids) > 30:
                 del self.latest_review_ids[0]
 
-            yield from self.alert({
+            attachments.append({
                 'title': self.refine_title(review, self.translate_to_english(review['lang'], review['title'])),
                 'text': self.translate_to_english(review['lang'], review['content'])
             })
+        yield from self.alert(attachments)
 
     @asyncio.coroutine
-    def alert(self, attachment):
+    def alert(self, attachments):
         url = 'https://hooks.slack.com/services/{}'.format(settings.SLACK_TOKEN)
         payload = {
             'channel': settings.SLACK_CHANNEL[self.store],
             'username': settings.SLACK_USERNAME,
             'icon_emoji': settings.SLACK_EMOJI,
-            "attachments": [attachment]
+            "attachments": attachments
         }
         response = yield from aiohttp.request('POST', url, data={"payload": json.dumps(payload)})
         assert response.status == 200
