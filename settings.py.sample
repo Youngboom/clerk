@@ -8,6 +8,8 @@ PLAY_APP_CODE = 'kr.co.vcnc.android.couple'
 APPSTORE_CODE = '458035189'
 
 SLACK_TOKEN = ''
+SLACK_EMOJI = ''
+SLACK_USERNAME = ''
 
 SLACK_CHANNEL = {
     GOOGLE_PLAY: '',

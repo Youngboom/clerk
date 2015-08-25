@@ -1,4 +1,5 @@
 import asyncio
+import json
 
 import aiohttp
 from helper.lang import translate, UNKNOWN_LANGUAGE
@@ -12,6 +13,7 @@ class Slack(object):
 
     @asyncio.coroutine
     def surveillance(self, reviews):
+        attachments = list()
         for review in reviews:
             print(review)
             if review['id'] in self.latest_review_ids:
@@ -21,23 +23,25 @@ class Slack(object):
                 return
 
             self.latest_review_ids.append(review['id'])
-            review['title'] = self.translate_to_english(review['lang'], review['title'])
-            review['content'] = self.translate_to_english(review['lang'], review['content'])
-
-            message = '*[{}-{}][{}]*\n' \
-                      '*{}*\n' \
-                      '{}\n'.format(review['region'], review['lang'], self.star(review['score']), review['title'], review['content'])
-
             if len(self.latest_review_ids) > 30:
                 del self.latest_review_ids[0]
 
-            yield from self.alert(message)
+            attachments.append({
+                'title': self.refine_title(review, self.translate_to_english(review['lang'], review['title'])),
+                'text': self.translate_to_english(review['lang'], review['content'])
+            })
+        yield from self.alert(attachments)
 
     @asyncio.coroutine
-    def alert(self, message):
-        channel = settings.SLACK_CHANNEL[self.store]
-        url = 'https://vcnc.slack.com/services/hooks/slackbot?token={}&channel=%23{}'.format(settings.SLACK_TOKEN, channel)
-        response = yield from aiohttp.request('POST', url, data=message)
+    def alert(self, attachments):
+        url = 'https://hooks.slack.com/services/{}'.format(settings.SLACK_TOKEN)
+        payload = {
+            'channel': settings.SLACK_CHANNEL[self.store],
+            'username': settings.SLACK_USERNAME,
+            'icon_emoji': settings.SLACK_EMOJI,
+            "attachments": attachments
+        }
+        response = yield from aiohttp.request('POST', url, data={"payload": json.dumps(payload)})
         assert response.status == 200
 
     @staticmethod
@@ -60,5 +64,10 @@ class Slack(object):
         if lang not in [UNKNOWN_LANGUAGE, 'en'] + except_languages:
             translated = translate(content, lang, to_lang='en')
             if 'MYMEMORY' not in translated:
-                return '(TRANSLATE) ' + translated
+                return '(TRANSLATE) {}\n(ORIGIN) {}'.format(translated, content)
         return content
+
+    @staticmethod
+    def refine_title(review, title):
+        return '[{}-{}][{}]\n' \
+        '{}'.format(review['region'], review['lang'], Slack.star(review['score']), title)
