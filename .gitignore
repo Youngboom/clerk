@@ -3,6 +3,7 @@
 
 # Virtualenv
 env
+.venv
 
 # Setting files
 settings.py
