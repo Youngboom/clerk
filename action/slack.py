@@ -37,7 +37,7 @@ class Slack(object):
             'channel': settings.SLACK_CHANNEL[self.store],
             'username': settings.SLACK_USERNAME,
             'icon_emoji': settings.SLACK_EMOJI,
-            "attachments": attachment
+            "attachments": [attachment]
         }
         response = yield from aiohttp.request('POST', url, data={"payload": json.dumps(payload)})
         assert response.status == 200
