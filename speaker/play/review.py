@@ -31,13 +31,12 @@ def latest_reviews(code, region, buffer_size):
     for raw_review in tree.xpath('//div[@class="single-review"]')[:buffer_size]:
         reviews.append({
             'id': raw_review.xpath('./div[@class="review-header"]')[0].attrib['data-reviewid'],
-            'title': raw_review.xpath('./div[@class="review-body"]/span[@class="review-title"]')[0].text,
-            'content': raw_review.xpath('./div[@class="review-body"]')[0].text_content().replace(raw_review.xpath('./div/div[@class="review-link"]')[0].getchildren()[0].text, '').strip(),
             'title': raw_review.xpath('./div[@class="review-body with-review-wrapper"]/span[@class="review-title"]')[0].text,
             'content': raw_review.xpath('./div[@class="review-body with-review-wrapper"]')[0].text_content().replace(raw_review.xpath('./div/div[@class="review-link"]')[0].getchildren()[0].text, '').strip(),
+            'name': raw_review.xpath('./div[@class="review-header"]/div[@class="review-info"]/span/a')[0].text_content(),
             'score': int(raw_review.xpath('./div/div/div/div/div[@class="current-rating"]')[0].attrib['style'].replace('width:', '').replace('%', '').replace(';', '').strip()),
             'date': date(region, raw_review.xpath('./div/div/span[@class="review-date"]')[0].text),
-            'version': '',
+            'version': None,
             'lang': lang,
             'region': region
         })

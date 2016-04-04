@@ -25,17 +25,19 @@ class Slack(object):
             if len(self.latest_review_ids) > 30:
                 del self.latest_review_ids[0]
 
-            yield from self.alert({
-                'title': self.refine_title(review, self.translate_to_english(review['lang'], review['title'])),
+            version = (" - {}".format(review['version'])) if not review.get('version', '').isspace() else ""
+
+            yield from self.alert(review.get('name', 'Unknown'), {
+                'title': self.refine_title(review, self.translate_to_english(review['lang'], review['title'])) + version,
                 'text': self.translate_to_english(review['lang'], review['content'])
             })
 
     @asyncio.coroutine
-    def alert(self, attachment):
+    def alert(self, name, attachment):
         url = 'https://hooks.slack.com/services/{}'.format(settings.SLACK_TOKEN)
         payload = {
             'channel': settings.SLACK_CHANNEL[self.store],
-            'username': settings.SLACK_USERNAME,
+            'username': "Reviewer : " + (name if name.isspace() else "Anonymous"),
             'icon_emoji': settings.SLACK_EMOJI,
             "attachments": [attachment]
         }
