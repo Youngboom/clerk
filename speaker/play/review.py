@@ -36,7 +36,7 @@ def latest_reviews(code, region, buffer_size):
             'name': raw_review.xpath('./div[@class="review-header"]/div[@class="review-info"]/span/a')[0].text_content(),
             'score': int(raw_review.xpath('./div/div/div/div/div[@class="current-rating"]')[0].attrib['style'].replace('width:', '').replace('%', '').replace(';', '').strip()),
             'date': date(region, raw_review.xpath('./div/div/span[@class="review-date"]')[0].text),
-            'version': None,
+            'version': '',
             'lang': lang,
             'region': region
         })
