@@ -37,7 +37,7 @@ class Slack(object):
         url = 'https://hooks.slack.com/services/{}'.format(settings.SLACK_TOKEN)
         payload = {
             'channel': settings.SLACK_CHANNEL[self.store],
-            'username': "Reviewer : " + (name if name.isspace() else "Anonymous"),
+            'username': "Reviewer : " + (name if not name.isspace() else "Anonymous"),
             'icon_emoji': settings.SLACK_EMOJI,
             "attachments": [attachment]
         }
