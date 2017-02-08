@@ -21,18 +21,28 @@ def latest_reviews(code, region, buffer_size):
             './ns:TextView[@topInset="0"]/ns:SetFontStyle/ns:GotoURL', namespaces=NAMESPACE)[0].tail.split('-')
         title = raw_review.xpath('./ns:HBoxView[@bottomInset="3"]/ns:TextView/ns:SetFontStyle/ns:b', namespaces=NAMESPACE)[0].text
         content = raw_review.xpath('./ns:TextView[@topInset="2"]/ns:SetFontStyle', namespaces=NAMESPACE)[0].text
-        reviews.append({
-            'id': raw_review.xpath('./ns:HBoxView[@bottomInset="3"]/ns:HBoxView[@stretchiness="1"]/ns:HBoxView[@rightInset="0"]/ns:VBoxView/ns:GotoURL', namespaces=NAMESPACE)[0].get('url').split('userReviewId=')[1],
-            'title': title,
-            'content': content,
-            'name': raw_review.xpath('./ns:HBoxView', namespaces=NAMESPACE)[1].xpath('./ns:TextView[@topInset="0"]/ns:SetFontStyle/ns:GotoURL/ns:b', namespaces=NAMESPACE)[0].text.strip(),
-            'score': score(raw_review),
-            'created_at': created_at(review_info),
-            'version': version(review_info),
-            'reviewer_id': raw_review.xpath('./ns:HBoxView', namespaces=NAMESPACE)[1].xpath('./ns:TextView[@topInset="0"]/ns:SetFontStyle/ns:GotoURL', namespaces=NAMESPACE)[0].get('url').split('userProfileId=')[1],
-            'lang': find_out_language(REGIONS[region]['langs'], content, title),
-            'region': region
-        })
+        try:
+            reviews.append({
+                'id': raw_review.xpath(
+                    './ns:HBoxView[@bottomInset="3"]/ns:HBoxView[@stretchiness="1"]/ns:HBoxView[@rightInset="0"]/ns:VBoxView/ns:GotoURL',
+                    namespaces=NAMESPACE)[0].get('url').split('userReviewId=')[1],
+                'title': title,
+                'content': content,
+                'name': raw_review.xpath('./ns:HBoxView', namespaces=NAMESPACE)[1].xpath(
+                    './ns:TextView[@topInset="0"]/ns:SetFontStyle/ns:GotoURL/ns:b', namespaces=NAMESPACE)[
+                    0].text.strip(),
+                'score': score(raw_review),
+                'created_at': created_at(review_info),
+                'version': version(review_info),
+                'reviewer_id': raw_review.xpath('./ns:HBoxView', namespaces=NAMESPACE)[1].xpath(
+                    './ns:TextView[@topInset="0"]/ns:SetFontStyle/ns:GotoURL', namespaces=NAMESPACE)[0].get(
+                    'url').split('userProfileId=')[1],
+                'lang': find_out_language(REGIONS[region]['langs'], content, title),
+                'region': region
+            })
+        except IndexError:
+            pass
+
     return reviews
 
 

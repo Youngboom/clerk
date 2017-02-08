@@ -2,6 +2,8 @@ import asyncio
 import json
 
 import aiohttp
+import requests
+
 from helper.lang import translate, UNKNOWN_LANGUAGE
 import settings
 
@@ -27,12 +29,11 @@ class Slack(object):
 
             version = (" - {}".format(review['version'])) if not review.get('version', '').isspace() else ""
 
-            yield from self.alert(review.get('name', 'Unknown'), {
-                'title': self.refine_title(review, self.translate_to_english(review['lang'], review['title'])) + version,
-                'text': self.translate_to_english(review['lang'], review['content'])
+            self.alert(review.get('name', 'Unknown'), {
+                'title': self.refine_title(review, self.translate(review['lang'], review['title'], "ko")) + version,
+                'text': self.translate(review['lang'], review['content'], "ko")
             })
 
-    @asyncio.coroutine
     def alert(self, name, attachment):
         url = 'https://hooks.slack.com/services/{}'.format(settings.SLACK_TOKEN)
         payload = {
@@ -41,8 +42,8 @@ class Slack(object):
             'icon_emoji': settings.SLACK_EMOJI,
             "attachments": [attachment]
         }
-        response = yield from aiohttp.request('POST', url, data={"payload": json.dumps(payload)})
-        assert response.status == 200
+        resp = requests.post(url, data={"payload": json.dumps(payload)})
+        assert resp.status_code == 200
 
     @staticmethod
     def star(score):
@@ -55,14 +56,12 @@ class Slack(object):
         return star_mark
 
     @staticmethod
-    def translate_to_english(lang, content):
+    def translate(lang, content, to_lang='en'):
         if content is None:
             return None
 
-        except_languages = ['ko']
-
-        if lang not in [UNKNOWN_LANGUAGE, 'en'] + except_languages:
-            translated = translate(content, lang, to_lang='en')
+        if lang not in [UNKNOWN_LANGUAGE, to_lang]:
+            translated = translate(content, lang, to_lang)
             if 'MYMEMORY' not in translated:
                 return '(TRANSLATE) {}\n(ORIGIN) {}'.format(translated, content)
         return content
