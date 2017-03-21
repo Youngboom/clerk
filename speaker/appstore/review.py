@@ -1,4 +1,5 @@
 import asyncio
+import json
 from helper.filter import remove_emoji
 from helper.lang import find_out_language
 from lxml import etree
@@ -9,56 +10,35 @@ from speaker.appstore import NAMESPACE, REGIONS
 
 @asyncio.coroutine
 def latest_reviews(code, region, buffer_size):
-    url = "http://ax.phobos.apple.com.edgesuite.net/WebObjects/MZStore.woa/wa/viewContentsUserReviews?id={}&pageNumber={}&sortOrdering=4&onlyLatestVersion=false&type=Purple+Software".format(code, 0)
-    headers = {
-        'X-Apple-Store-Front': REGIONS[region]['app_store_id'],
-        'User-Agent': 'iTunes/9.2 (Macintosh; U; Mac OS X 10.6)'
-    }
-    body = yield from request(url, headers=headers)
+    url = "https://itunes.apple.com/{}/rss/customerreviews/id={}/sortBy=mostRecent/json".format(region, code)
+    body = yield from request(url)
     reviews = list()
-    for raw_review in etree.XML(body).xpath('//ns:VBoxView[@leftInset="10"]', namespaces=NAMESPACE)[1:][:buffer_size]:
-        review_info = raw_review.xpath('./ns:HBoxView', namespaces=NAMESPACE)[1].xpath(
-            './ns:TextView[@topInset="0"]/ns:SetFontStyle/ns:GotoURL', namespaces=NAMESPACE)[0].tail.split('-')
-        title = raw_review.xpath('./ns:HBoxView[@bottomInset="3"]/ns:TextView/ns:SetFontStyle/ns:b', namespaces=NAMESPACE)[0].text
-        content = raw_review.xpath('./ns:TextView[@topInset="2"]/ns:SetFontStyle', namespaces=NAMESPACE)[0].text
+    feed = json.loads(body.decode('utf-8')).get('feed')
+    if feed is None:
+        return reviews
+    entries = feed.get('entry')
+    if entries is None:
+        return reviews
+    for entry in entries:
         try:
+            if entry.get('author') is None:
+                continue
+            title = entry['title']['label']
+            content = entry['content']['label']
             reviews.append({
-                'id': raw_review.xpath(
-                    './ns:HBoxView[@bottomInset="3"]/ns:HBoxView[@stretchiness="1"]/ns:HBoxView[@rightInset="0"]/ns:VBoxView/ns:GotoURL',
-                    namespaces=NAMESPACE)[0].get('url').split('userReviewId=')[1],
+                'id': entry['id']['label'],
                 'title': title,
                 'content': content,
-                'name': raw_review.xpath('./ns:HBoxView', namespaces=NAMESPACE)[1].xpath(
-                    './ns:TextView[@topInset="0"]/ns:SetFontStyle/ns:GotoURL/ns:b', namespaces=NAMESPACE)[
-                    0].text.strip(),
-                'score': score(raw_review),
-                'created_at': created_at(review_info),
-                'version': version(review_info),
-                'reviewer_id': raw_review.xpath('./ns:HBoxView', namespaces=NAMESPACE)[1].xpath(
-                    './ns:TextView[@topInset="0"]/ns:SetFontStyle/ns:GotoURL', namespaces=NAMESPACE)[0].get(
-                    'url').split('userProfileId=')[1],
+                'name': entry['author']['name']['label'],
+                'score': score(entry['im:rating']['label']),
+                'version': entry['im:version']['label'],
                 'lang': find_out_language(REGIONS[region]['langs'], content, title),
                 'region': region
             })
         except IndexError:
             pass
-
     return reviews
 
 
-def version(review_meta):
-    return review_meta[1].replace('Version', '').strip()
-
-
-def created_at(review_meta):
-    raw = review_meta[2].strip()
-    try:
-        return datetime.strptime(raw, '%d %B %Y')
-    except ValueError:
-        return datetime.strptime(raw, '%b %d, %Y')
-
-
-def score(raw_review):
-    raw_score = raw_review.xpath('./ns:HBoxView[@bottomInset="3"]/ns:HBoxView[@stretchiness="1"]/ns:HBoxView',
-                                 namespaces=NAMESPACE)[0].get('alt').replace('stars', '').replace('star', '').strip()
-    return int(raw_score) * 20
+def score(rating):
+    return int(rating) * 20
