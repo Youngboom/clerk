@@ -16,7 +16,10 @@ def latest_reviews(code, region, buffer_size):
     feed = json.loads(body.decode('utf-8')).get('feed')
     if feed is None:
         return reviews
-    entries = feed.get('entry')
+    if region == 'sg':
+        entries = feed.get('entry')
+    else:
+        entries = feed.get('feed').get('entry')
     if entries is None:
         return reviews
     for entry in entries:
